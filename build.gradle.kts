@@ -1,0 +1,61 @@
+plugins {
+    id("java")
+}
+
+val versionArr = intArrayOf(0,0,1)
+version = 'v' + versionArr.joinToString(".")
+group = "org.basilisk"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("org.jetbrains:annotations:24.0.0")
+    implementation("net.sf.jopt-simple:jopt-simple:6.0-alpha-3")
+    implementation("com.formdev:flatlaf:3.0")
+    testImplementation(platform("org.junit:junit-bom:5.9.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+}
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "org.basilisk.Main"
+    }
+    from(sourceSets.main.get().output)
+}
+// Get the manifest URL of the current JAR file
+
+tasks.register<Jar>("debug") {
+    manifest {
+        attributes["Main-Class"] = "org.basilisk.Main"
+        attributes["debug"] = "true"
+    }
+    from(sourceSets.main.get().output)
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    archiveClassifier.set("debug")
+}
+
+tasks.register<Jar>("release") {
+    manifest {
+        attributes["Main-Class"] = "org.basilisk.Main"
+        attributes["debug"] = "false"
+    }
+    from(sourceSets.main.get().output)
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    archiveClassifier.set("release")
+}
+
+tasks.register("buildJars") {
+    dependsOn("clean", "debug", "release", "version")
+}
+tasks.register("version") {
+// return the version, so can be used in github actions
+    doLast {
+        println(version)
+    }
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
